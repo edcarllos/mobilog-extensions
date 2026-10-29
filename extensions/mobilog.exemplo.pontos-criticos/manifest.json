@@ -18,6 +18,7 @@
   "help@en": "help.en.md",
   "icon": "icon.svg",
   "changelog": "CHANGELOG.md",
+  "screenshots": ["store/mapa.jpg"],
   "permissions": ["mapa.ler", "simulacao.ler", "mapa.desenhar"],
   "limits": {"memoryMB": 64},
   "contributes": [
