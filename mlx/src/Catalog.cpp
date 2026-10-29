@@ -111,16 +111,38 @@ std::string catalogJson(const Catalog& c) {
     return j.dump(1);
 }
 
+namespace {
+PublishedCatalog publishFolders(const std::vector<std::string>& dirs, const std::vector<std::pair<std::string, Bytes>>& examples,
+                                const std::string& serverName, const std::string& serverKeyText,
+                                const std::function<std::string(const CatalogEntry&)>& updatedOf);
+}  // namespace
+
 PublishedCatalog publishCatalog(const std::string& dir, const std::vector<std::pair<std::string, Bytes>>& examples,
+                                const std::string& serverName, const std::string& serverKeyText,
+                                const std::function<std::string(const CatalogEntry&)>& updatedOf) {
+    return publishFolders(dir.empty() ? std::vector<std::string>{} : std::vector<std::string>{dir}, examples, serverName, serverKeyText,
+                          updatedOf);
+}
+
+PublishedCatalog publishCatalog(const std::vector<std::string>& dirs, const std::string& serverName, const std::string& serverKeyText) {
+    return publishFolders(dirs, {}, serverName, serverKeyText, {});
+}
+
+namespace {
+PublishedCatalog publishFolders(const std::vector<std::string>& dirs, const std::vector<std::pair<std::string, Bytes>>& examples,
                                 const std::string& serverName, const std::string& serverKeyText,
                                 const std::function<std::string(const CatalogEntry&)>& updatedOf) {
     PublishedCatalog out;
     std::error_code ec;
     std::vector<fs::path> files;
-    if (!dir.empty())
-        for (const auto& it : fs::directory_iterator(dir, ec))
-            if (it.is_regular_file(ec) && it.path().extension() == ".mlx") files.push_back(it.path());
-    std::sort(files.begin(), files.end());
+    for (const std::string& dir : dirs) {
+        std::vector<fs::path> here;
+        if (!dir.empty())
+            for (const auto& it : fs::directory_iterator(dir, ec))
+                if (it.is_regular_file(ec) && it.path().extension() == ".mlx") here.push_back(it.path());
+        std::sort(here.begin(), here.end());
+        files.insert(files.end(), here.begin(), here.end());  // the folders in order: the first wins a tie
+    }
     for (const fs::path& p : files) {
         if (fs::file_size(p, ec) > kMaxPackageBytes) {
             out.problems.push_back(p.filename().string() + ": grande demais");
@@ -166,6 +188,7 @@ PublishedCatalog publishCatalog(const std::string& dir, const std::vector<std::p
     out.json = catalogJson(c);
     return out;
 }
+}  // namespace
 
 bool parseCatalog(std::string_view text, Catalog& out, std::string* error) {
     const json j = json::parse(text, nullptr, false);

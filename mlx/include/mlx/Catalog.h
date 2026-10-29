@@ -65,6 +65,9 @@ struct PublishedCatalog {
 PublishedCatalog publishCatalog(const std::string& dir, const std::vector<std::pair<std::string, Bytes>>& examples,
                                 const std::string& serverName, const std::string& serverKeyText,
                                 const std::function<std::string(const CatalogEntry&)>& updatedOf = {});
+// Several folders (a server's own and its copy of the store): one entry per id, the newest version; at
+// the same version, the earlier folder's.
+PublishedCatalog publishCatalog(const std::vector<std::string>& dirs, const std::string& serverName, const std::string& serverKeyText);
 std::string catalogJson(const Catalog& c);  // what publishCatalog writes, from entries
 bool parseCatalog(std::string_view json, Catalog& out, std::string* error = nullptr);
 std::string catalogFileName(const Manifest& m);  // "<id>-<version>.mlx"
