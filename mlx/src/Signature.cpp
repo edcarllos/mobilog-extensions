@@ -165,4 +165,40 @@ SigCheck verifyPackage(const ZipReader& zip) {
     return r;
 }
 
+namespace {
+constexpr const char* kDetachedHeader = "mobilog-catalog-v1\n";
+constexpr std::string_view kDetachedTag = "mobilog-catalog-signature-v1";
+}  // namespace
+
+std::string signDetached(std::string_view data, const SigningKey& key) {
+    std::string text = kDetachedHeader;
+    text.append(data);
+    std::array<uint8_t, 64> sig;
+    crypto_ed25519_sign(sig.data(), key.secret.data(), reinterpret_cast<const uint8_t*>(text.data()), text.size());
+    return std::string(kDetachedTag) + " " + toBase64(key.pub.data(), key.pub.size()) + " " + toBase64(sig.data(), sig.size()) + "\n";
+}
+
+bool verifyDetached(std::string_view data, std::string_view signature, PublicKey& key, std::string* error) {
+    const auto fail = [&](const char* why) {
+        if (error) *error = why;
+        return false;
+    };
+    while (!signature.empty() && (signature.back() == '\n' || signature.back() == '\r' || signature.back() == ' ')) signature.remove_suffix(1);
+    if (signature.substr(0, kDetachedTag.size()) != kDetachedTag || signature.size() <= kDetachedTag.size() + 1 ||
+        signature[kDetachedTag.size()] != ' ')
+        return fail("assinatura do catálogo ilegível");
+    signature.remove_prefix(kDetachedTag.size() + 1);
+    const size_t space = signature.find(' ');
+    Bytes k, s;
+    if (space == std::string_view::npos || !fromBase64(signature.substr(0, space), k) || k.size() != 32 ||
+        !fromBase64(signature.substr(space + 1), s) || s.size() != 64)
+        return fail("assinatura do catálogo ilegível");
+    std::copy(k.begin(), k.end(), key.begin());
+    std::string text = kDetachedHeader;
+    text.append(data);
+    if (crypto_ed25519_check(s.data(), key.data(), reinterpret_cast<const uint8_t*>(text.data()), text.size()) != 0)
+        return fail("assinatura do catálogo inválida");
+    return true;
+}
+
 }  // namespace mobilog::ext

@@ -27,8 +27,8 @@ PackageCheck checkPackage(Bytes mlx, const PackageOptions& opt, ZipReader& zip) 
     parseManifest(std::string(raw.begin(), raw.end()), {opt.appVersion, opt.builtin}, r.manifest, problems);
     r.problems.insert(r.problems.end(), problems.begin(), problems.end());
 
-    for (const std::string* f : {&r.manifest.icon, &r.manifest.help})
-        if (!f->empty() && !zip.find(*f)) r.problems.push_back("o pacote não contém " + *f);
+    for (const std::string& f : r.manifest.namedFiles())
+        if (!zip.find(f)) r.problems.push_back("o pacote não contém " + f);
     if (!r.manifest.native() && !r.manifest.entry.empty()) {
         Bytes wasm;
         if (!zip.read(r.manifest.entry, wasm, &err)) r.problems.push_back(err);

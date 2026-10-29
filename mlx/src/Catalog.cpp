@@ -19,10 +19,27 @@ using json = nlohmann::json;
 std::string catalogFileName(const Manifest& m) { return m.id + "-" + m.version + ".mlx"; }
 
 namespace {
+// A file name of our own making only: no folders, no traversal, no scheme.
+bool plainFileName(std::string_view f) {
+    return !f.empty() && f.size() < 160 && f.find_first_of("/\\:?#") == std::string_view::npos && f.find("..") == std::string_view::npos;
+}
+}  // namespace
+
+std::string catalogPackageUrl(std::string_view catalogUrl, std::string_view file) {
+    if (!plainFileName(file)) return {};
+    const size_t end = catalogUrl.find_first_of("?#");
+    std::string_view base = catalogUrl.substr(0, end);
+    const size_t slash = base.rfind('/');
+    base = slash == std::string_view::npos ? std::string_view() : base.substr(0, slash + 1);
+    return std::string(base) + std::string(file);
+}
+
+namespace {
 
 bool entryOf(const Bytes& mlx, bool example, CatalogEntry& e, std::string& problem) {
     example = example || officialExample(mlx);  // one of the Mobilog's, put in the folder
-    const PackageCheck c = checkPackage(mlx, {"", example});
+    ZipReader zip;
+    const PackageCheck c = checkPackage(mlx, {"", example}, zip);
     if (!c.ok) {
         problem = c.problems.empty() ? "pacote inválido" : c.problems.front();
         return false;
@@ -39,13 +56,63 @@ bool entryOf(const Bytes& mlx, bool example, CatalogEntry& e, std::string& probl
     e.sha512 = c.sha512;
     e.signerKey = c.signature.status == SigStatus::Valid ? toBase64(c.signature.key.data(), c.signature.key.size()) : std::string();
     e.example = example;
+    e.summary = m.summary;
+    e.category = m.category;
+    e.license = m.license;
+    e.homepage = m.homepage;
+    e.repository = m.repository;
+    e.minAppVersion = m.minAppVersion;
+    e.apiVersion = m.apiVersion;
+    e.keywords = m.keywords;
+    e.names = m.names;
+    e.summaries = m.summaries;
+    e.descriptions = m.descriptions;
+    e.screenshots = int(m.screenshots.size());
+    Bytes icon;
+    std::string err;
+    if (m.icon.size() > 4 && m.icon.compare(m.icon.size() - 4, 4, ".svg") == 0 && zip.read(m.icon, icon, &err) &&
+        icon.size() <= kMaxCatalogIcon)
+        e.icon.assign(icon.begin(), icon.end());
     return true;
+}
+
+json entryJson(const CatalogEntry& e) {
+    json perms = json::array();
+    for (Permission perm : permissionList(e.permissions)) perms.push_back(permissionInfo(perm)->key);
+    json o = {{"id", e.id}, {"name", e.name}, {"version", e.version}, {"description", e.description},
+              {"author", e.author}, {"permissions", perms}, {"file", e.file}, {"size", e.size},
+              {"sha512", e.sha512}, {"signerKey", e.signerKey}, {"example", e.example}};
+    const auto opt = [&](const char* k, const std::string& v) {
+        if (!v.empty()) o[k] = v;
+    };
+    opt("summary", e.summary);
+    opt("category", e.category);
+    opt("license", e.license);
+    opt("homepage", e.homepage);
+    opt("repository", e.repository);
+    opt("minAppVersion", e.minAppVersion);
+    opt("updated", e.updated);
+    opt("icon", e.icon);
+    if (e.apiVersion != 1) o["apiVersion"] = e.apiVersion;
+    if (e.screenshots) o["screenshots"] = e.screenshots;
+    if (!e.keywords.empty()) o["keywords"] = e.keywords;
+    for (const auto& [lang, v] : e.names) o["name@" + lang] = v;
+    for (const auto& [lang, v] : e.summaries) o["summary@" + lang] = v;
+    for (const auto& [lang, v] : e.descriptions) o["description@" + lang] = v;
+    return o;
 }
 
 }  // namespace
 
+std::string catalogJson(const Catalog& c) {
+    json j = {{"version", 1}, {"server", c.server}, {"serverKey", c.serverKey}, {"extensions", json::array()}};
+    for (const CatalogEntry& e : c.entries) j["extensions"].push_back(entryJson(e));
+    return j.dump(1);
+}
+
 PublishedCatalog publishCatalog(const std::string& dir, const std::vector<std::pair<std::string, Bytes>>& examples,
-                                const std::string& serverName, const std::string& serverKeyText) {
+                                const std::string& serverName, const std::string& serverKeyText,
+                                const std::function<std::string(const CatalogEntry&)>& updatedOf) {
     PublishedCatalog out;
     std::error_code ec;
     std::vector<fs::path> files;
@@ -87,16 +154,15 @@ PublishedCatalog publishCatalog(const std::string& dir, const std::vector<std::p
         else if (compareVersions(p.entry.version, same->entry.version) > 0) *same = std::move(p);
     }
     out.packages = std::move(unique);
-    json j = {{"version", 1}, {"server", serverName}, {"serverKey", serverKeyText}, {"extensions", json::array()}};
-    for (const PublishedPackage& p : out.packages) {
-        const CatalogEntry& e = p.entry;
-        json perms = json::array();
-        for (Permission perm : permissionList(e.permissions)) perms.push_back(permissionInfo(perm)->key);
-        j["extensions"].push_back({{"id", e.id}, {"name", e.name}, {"version", e.version}, {"description", e.description},
-                                   {"author", e.author}, {"permissions", perms}, {"file", e.file}, {"size", e.size},
-                                   {"sha512", e.sha512}, {"signerKey", e.signerKey}, {"example", e.example}});
+    // In a fixed order (the store's index changes only where a package did).
+    std::sort(out.packages.begin(), out.packages.end(),
+              [](const PublishedPackage& a, const PublishedPackage& b) { return a.entry.id < b.entry.id; });
+    Catalog c{serverName, serverKeyText, {}};
+    for (PublishedPackage& p : out.packages) {
+        if (updatedOf) p.entry.updated = sanitizeText(updatedOf(p.entry), 32);
+        c.entries.push_back(p.entry);
     }
-    out.json = j.dump();
+    out.json = catalogJson(c);
     return out;
 }
 
@@ -117,21 +183,51 @@ bool parseCatalog(std::string_view text, Catalog& out, std::string* error) {
         e.id = x.value("id", "");
         e.name = sanitizeText(x.value("name", ""), 40);
         e.version = x.value("version", "");
-        e.description = sanitizeText(x.value("description", ""), 300);
+        e.description = sanitizeText(x.value("description", ""), 400, true);
         e.author = sanitizeText(x.value("author", ""), 60);
         e.file = x.value("file", "");
         e.size = x.value("size", uint64_t(0));
         e.sha512 = x.value("sha512", "");
         e.signerKey = x.value("signerKey", "");
         e.example = x.value("example", false);
+        const auto text = [&](const char* k, size_t n) {
+            return x.contains(k) && x[k].is_string() ? sanitizeText(x[k].get<std::string>(), n) : std::string();
+        };
+        e.summary = text("summary", 80);
+        e.category = categoryByKey(text("category", 24)) ? text("category", 24) : std::string();
+        e.license = text("license", 40);
+        e.minAppVersion = text("minAppVersion", 24);
+        e.updated = text("updated", 32);
+        for (const auto& [k, field] : {std::pair{"homepage", &e.homepage}, std::pair{"repository", &e.repository}}) {
+            const std::string u = text(k, 200);
+            if (u.rfind("https://", 0) == 0 && u.find_first_of(" \"<>") == std::string::npos) *field = u;
+        }
+        if (x.contains("apiVersion") && x["apiVersion"].is_number_integer()) e.apiVersion = x["apiVersion"].get<int>();
+        if (x.contains("screenshots") && x["screenshots"].is_number_integer())
+            e.screenshots = std::clamp(x["screenshots"].get<int>(), 0, int(kMaxScreenshots));
+        if (x.contains("icon") && x["icon"].is_string()) {
+            std::string svg = x["icon"].get<std::string>();
+            if (svg.size() <= kMaxCatalogIcon && validUtf8(svg) && svg.find("<svg") != std::string::npos) e.icon = std::move(svg);
+        }
+        if (x.contains("keywords") && x["keywords"].is_array())
+            for (const json& w : x["keywords"])
+                if (w.is_string() && e.keywords.size() < kMaxKeywords && validUtf8(w.get<std::string>()))
+                    e.keywords.push_back(sanitizeText(w.get<std::string>(), 24));
+        for (auto it = x.begin(); it != x.end(); ++it) {
+            const std::string& k = it.key();
+            const size_t at = k.find('@');
+            if (at == std::string::npos || !it->is_string() || k.size() - at - 1 > 8 || !validUtf8(it->get<std::string>())) continue;
+            const std::string lang = k.substr(at + 1), base = k.substr(0, at);
+            if (base == "name") e.names[lang] = sanitizeText(it->get<std::string>(), 40);
+            else if (base == "summary") e.summaries[lang] = sanitizeText(it->get<std::string>(), 80);
+            else if (base == "description") e.descriptions[lang] = sanitizeText(it->get<std::string>(), 400, true);
+        }
         if (x.contains("permissions") && x["permissions"].is_array())
             for (const json& k : x["permissions"])
                 if (k.is_string())
                     if (const PermissionInfo* p = permissionByKey(k.get<std::string>())) e.permissions |= p->bit;
         SemVer v;
-        // A file name of our own making only: no folders, no traversal.
-        const bool plainFile = !e.file.empty() && e.file.find('/') == std::string::npos && e.file.find('\\') == std::string::npos &&
-                               e.file.find("..") == std::string::npos && e.file.size() < 160;
+        const bool plainFile = plainFileName(e.file);
         if (!validExtensionId(e.id) || !parseSemVer(e.version, v) || !plainFile || e.sha512.size() != 128 || e.size == 0 ||
             e.size > kMaxPackageBytes)
             continue;  // left out: not installable anyway

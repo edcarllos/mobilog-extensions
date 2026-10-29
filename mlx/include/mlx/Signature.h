@@ -51,4 +51,11 @@ struct SigCheck {
 };
 SigCheck verifyPackage(const ZipReader& zip);
 
+// A detached signature of a text (the store's catalog.json, in catalog.json.sig):
+// "mobilog-catalog-signature-v1 <public key, base64> <signature, base64>\n", over
+// "mobilog-catalog-v1\n" followed by the exact bytes of the text.
+std::string signDetached(std::string_view data, const SigningKey& key);
+// Valid: true, and `key` is the key that signed (compare it with the keys you trust).
+bool verifyDetached(std::string_view data, std::string_view signature, PublicKey& key, std::string* error = nullptr);
+
 }  // namespace mobilog::ext

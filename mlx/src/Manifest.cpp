@@ -155,6 +155,49 @@ bool validExtensionId(std::string_view id) {
     return parts >= 2;
 }
 
+const std::vector<CategoryInfo>& categoryTable() {
+    static const std::vector<CategoryInfo> t = {
+        {"rotas", "Rotas e entregas", "Routing and delivery"},
+        {"analise", "Análise", "Analysis"},
+        {"transporte", "Transporte público", "Public transport"},
+        {"seguranca", "Segurança", "Safety"},
+        {"dados", "Dados e importação", "Data and import"},
+        {"visualizacao", "Visualização", "Visualization"},
+        {"ferramentas", "Ferramentas", "Tools"},
+        {"outros", "Outros", "Other"},
+    };
+    return t;
+}
+
+const CategoryInfo* categoryByKey(std::string_view key) {
+    for (const CategoryInfo& c : categoryTable())
+        if (key == c.key) return &c;
+    return nullptr;
+}
+
+namespace {
+template <class Map>
+const std::string& inLang(const Map& m, std::string_view lang, const std::string& fallback) {
+    if (!lang.empty())
+        if (const auto it = m.find(std::string(lang)); it != m.end() && !it->second.empty()) return it->second;
+    return fallback;
+}
+}  // namespace
+
+const std::string& Manifest::nameIn(std::string_view lang) const { return inLang(names, lang, name); }
+const std::string& Manifest::summaryIn(std::string_view lang) const { return inLang(summaries, lang, summary); }
+const std::string& Manifest::descriptionIn(std::string_view lang) const { return inLang(descriptions, lang, description); }
+const std::string& Manifest::helpIn(std::string_view lang) const { return inLang(helps, lang, help); }
+
+std::vector<std::string> Manifest::namedFiles() const {
+    std::vector<std::string> f;
+    for (const std::string* s : {&icon, &help, &changelog})
+        if (!s->empty()) f.push_back(*s);
+    for (const auto& [lang, file] : helps) f.push_back(file);
+    f.insert(f.end(), screenshots.begin(), screenshots.end());
+    return f;
+}
+
 bool parseManifest(std::string_view text, const ManifestOptions& opt, Manifest& m, std::vector<std::string>& problems) {
     m = {};
     problems.clear();
@@ -197,28 +240,58 @@ bool parseManifest(std::string_view text, const ManifestOptions& opt, Manifest& 
     if (!opt.builtin && reservedId(m.id)) problems.push_back("id: reservado para as extensões do Mobilog");
     if (str("name", m.name, true, 40) && !opt.builtin && containsMobilog(m.name))
         problems.push_back("name: o nome \"Mobilog\" é reservado");
-    for (auto it = j.begin(); it != j.end(); ++it) {
-        const std::string& k = it.key();
-        if (k.rfind("name@", 0) != 0) continue;
-        const std::string lang = k.substr(5);
+    // Translations: name@en, summary@en, description@en (help@en, a file, below).
+    const auto langOf = [&](const std::string& k, size_t prefix, std::string& lang) {
+        lang = k.substr(prefix);
         bool okLang = lang.size() >= 2 && lang.size() <= 8;
         for (char c : lang) okLang = okLang && ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '-');
-        std::string v;
         if (!okLang) problems.push_back(k + ": idioma inválido");
-        else if (str(k.c_str(), v, false, 40) && !v.empty()) {
-            if (!opt.builtin && containsMobilog(v)) problems.push_back(k + ": o nome \"Mobilog\" é reservado");
-            m.names[lang] = v;
+        return okLang;
+    };
+    for (auto it = j.begin(); it != j.end(); ++it) {
+        const std::string& k = it.key();
+        std::string lang, v;
+        if (k.rfind("name@", 0) == 0) {
+            if (langOf(k, 5, lang) && str(k.c_str(), v, false, 40) && !v.empty()) {
+                if (!opt.builtin && containsMobilog(v)) problems.push_back(k + ": o nome \"Mobilog\" é reservado");
+                m.names[lang] = v;
+            }
+        } else if (k.rfind("summary@", 0) == 0) {
+            if (langOf(k, 8, lang) && str(k.c_str(), v, false, 80) && !v.empty()) m.summaries[lang] = v;
+        } else if (k.rfind("description@", 0) == 0) {
+            if (langOf(k, 12, lang) && str(k.c_str(), v, false, 400, true) && !v.empty()) m.descriptions[lang] = v;
         }
     }
     SemVer sv;
     if (str("version", m.version, true, 0) && !parseSemVer(m.version, sv)) problems.push_back("version: use o formato 1.2.3");
     str("description", m.description, false, 400, true);
+    str("summary", m.summary, false, 80);
     str("author", m.author, false, 60);
     str("license", m.license, false, 40);
-    if (str("homepage", m.homepage, false, 0) &&
-        (m.homepage.rfind("https://", 0) != 0 || m.homepage.size() > 200 || m.homepage.find_first_of(" \"<>") != std::string::npos)) {
-        problems.push_back("homepage: deve ser um endereço https://");
-        m.homepage.clear();
+    const auto https = [&](const char* key, std::string& out) {
+        if (str(key, out, false, 0) &&
+            (out.rfind("https://", 0) != 0 || out.size() > 200 || out.find_first_of(" \"<>") != std::string::npos)) {
+            problems.push_back(std::string(key) + ": deve ser um endereço https://");
+            out.clear();
+        }
+    };
+    https("homepage", m.homepage);
+    https("repository", m.repository);
+    if (str("category", m.category, false, 0) && !categoryByKey(m.category)) {
+        std::string keys;
+        for (const CategoryInfo& c : categoryTable()) keys += std::string(keys.empty() ? "" : ", ") + c.key;
+        problems.push_back("category: use uma de " + keys);
+        m.category.clear();
+    }
+    if (const auto it = j.find("keywords"); it != j.end()) {
+        if (!it->is_array() || it->size() > kMaxKeywords)
+            problems.push_back("keywords: uma lista de até " + std::to_string(kMaxKeywords) + " palavras");
+        else
+            for (const auto& w : *it) {
+                const std::string s = w.is_string() && validUtf8(w.get<std::string>()) ? sanitizeText(w.get<std::string>(), 24) : "";
+                if (s.empty()) problems.push_back("keywords: cada palavra deve ser um texto curto");
+                else m.keywords.push_back(s);
+            }
     }
 
     if (const auto it = j.find("apiVersion"); it == j.end()) problems.push_back("apiVersion: obrigatório");
@@ -255,6 +328,29 @@ bool parseManifest(std::string_view text, const ManifestOptions& opt, Manifest& 
     };
     member("icon", m.icon, {".svg", ".png"});
     member("help", m.help, {".md"});
+    member("changelog", m.changelog, {".md"});
+    for (auto it = j.begin(); it != j.end(); ++it) {
+        std::string lang, file;
+        if (it.key().rfind("help@", 0) != 0 || !langOf(it.key(), 5, lang)) continue;
+        member(it.key().c_str(), file, {".md"});
+        if (!file.empty()) m.helps[lang] = file;
+    }
+    if (const auto it = j.find("screenshots"); it != j.end()) {
+        if (!it->is_array() || it->size() > kMaxScreenshots)
+            problems.push_back("screenshots: uma lista de até " + std::to_string(kMaxScreenshots) + " imagens");
+        else
+            for (const auto& s : *it) {
+                std::string file, err;
+                if (s.is_string()) file = s.get<std::string>();
+                const auto ends = [&](const char* e) {
+                    const size_t n = std::char_traits<char>::length(e);
+                    return file.size() > n && file.compare(file.size() - n, n, e) == 0;
+                };
+                if (!validMemberName(file, &err) || !(ends(".png") || ends(".jpg") || ends(".jpeg")))
+                    problems.push_back("screenshots: '" + sanitizeText(file, 60) + "' deve ser uma imagem .png ou .jpg do pacote");
+                else m.screenshots.push_back(file);
+            }
+    }
 
     if (const auto it = j.find("permissions"); it != j.end()) {
         if (!it->is_array()) problems.push_back("permissions: deve ser uma lista");
@@ -326,6 +422,15 @@ std::string manifestJson(const Manifest& m) {
     if (!m.author.empty()) j["author"] = m.author;
     if (!m.license.empty()) j["license"] = m.license;
     if (!m.homepage.empty()) j["homepage"] = m.homepage;
+    if (!m.repository.empty()) j["repository"] = m.repository;
+    if (!m.summary.empty()) j["summary"] = m.summary;
+    for (const auto& [lang, s] : m.summaries) j["summary@" + lang] = s;
+    for (const auto& [lang, s] : m.descriptions) j["description@" + lang] = s;
+    if (!m.category.empty()) j["category"] = m.category;
+    if (!m.keywords.empty()) j["keywords"] = m.keywords;
+    if (!m.screenshots.empty()) j["screenshots"] = m.screenshots;
+    if (!m.changelog.empty()) j["changelog"] = m.changelog;
+    for (const auto& [lang, f] : m.helps) j["help@" + lang] = f;
     j["entry"] = m.entry;
     if (!m.icon.empty()) j["icon"] = m.icon;
     if (!m.help.empty()) j["help"] = m.help;

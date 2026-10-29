@@ -10,7 +10,10 @@
 //   "apiVersion": 1, "minAppVersion": "0.12.0",
 //   "description": "...", "author": "...", "license": "MIT", "homepage": "https://...",
 //   "entry": "extension.wasm",                  or "nativa" (built-in extensions only)
-//   "icon": "icon.svg", "help": "help.md",
+//   "icon": "icon.svg", "help": "help.md", "help@en": "help.en.md",
+//   "summary": "...", "summary@en": "...", "description@en": "...",   for the store
+//   "category": "analise", "keywords": ["acidentes", "risco"],
+//   "screenshots": ["store/mapa.png"], "changelog": "CHANGELOG.md", "repository": "https://...",
 //   "permissions": ["mapa.ler", "simulacao.ler", "mapa.desenhar"],
 //   "contributes": [{"kind": "painel", "id": "principal", "title": "Pontos críticos", "icon": "chart"}],
 //   "limits": {"memoryMB": 64}
@@ -62,6 +65,18 @@ struct Contribution {
     std::string icon;   // an icon name of the app's set, optional
 };
 
+// Store categories (manifest "category"): key, then the label in Portuguese and in English.
+struct CategoryInfo {
+    const char* key;
+    const char* label;
+    const char* labelEn;
+};
+const std::vector<CategoryInfo>& categoryTable();
+const CategoryInfo* categoryByKey(std::string_view key);
+
+constexpr size_t kMaxScreenshots = 4;
+constexpr size_t kMaxKeywords = 8;
+
 struct SemVer {
     int major = 0, minor = 0, patch = 0;
     std::string pre;  // "beta.1"; a pre-release sorts before the release
@@ -74,6 +89,11 @@ int compareVersions(std::string_view a, std::string_view b);
 struct Manifest {
     std::string id, name, version, description, author, license, homepage;
     std::map<std::string, std::string> names;  // "en" -> "Hot spots" (name@<lang>)
+    // For the store: a one-line summary, translations, a category, search words, pictures, news.
+    std::string summary, category, changelog, repository;
+    std::map<std::string, std::string> summaries, descriptions, helps;  // summary@<lang>, ... (helps: package files)
+    std::vector<std::string> keywords;
+    std::vector<std::string> screenshots;  // package files (.png, .jpg)
     int apiVersion = kApiVersion;
     std::string minAppVersion;
     std::string entry = "extension.wasm";
@@ -83,6 +103,13 @@ struct Manifest {
     uint32_t memoryMB = kDefaultMemoryMB;
 
     bool native() const { return entry == "nativa"; }
+    // The text in `lang` ("en"), or the default one: name, summary, description, help file.
+    const std::string& nameIn(std::string_view lang) const;
+    const std::string& summaryIn(std::string_view lang) const;
+    const std::string& descriptionIn(std::string_view lang) const;
+    const std::string& helpIn(std::string_view lang) const;
+    // Every file of the package the manifest names (icon, help, changelog, screenshots...).
+    std::vector<std::string> namedFiles() const;
     const Contribution* contribution(ContributionKind k, std::string_view id) const;
 };
 
