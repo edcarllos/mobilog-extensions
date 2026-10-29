@@ -29,7 +29,7 @@ PackageCheck checkPackage(Bytes mlx, const PackageOptions& opt, ZipReader& zip) 
     r.signature = verifyPackage(zip);
     r.storeSigned = r.signature.status == SigStatus::Valid && isStoreKey(r.signature.key);
     std::vector<std::string> problems;
-    parseManifest(std::string(raw.begin(), raw.end()), {opt.appVersion, opt.builtin, r.storeSigned}, r.manifest, problems);
+    parseManifest(std::string(raw.begin(), raw.end()), {opt.appVersion, opt.builtin, r.storeSigned || opt.reserved}, r.manifest, problems);
     r.problems.insert(r.problems.end(), problems.begin(), problems.end());
 
     for (const std::string& f : r.manifest.namedFiles())

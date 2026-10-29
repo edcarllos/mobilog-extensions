@@ -28,6 +28,7 @@ struct PackageCheck {
 struct PackageOptions {
     std::string appVersion;
     bool builtin = false;
+    bool reserved = false;  // the reserved ids/names too (the author's own package, in development)
 };
 
 // `zip` is left open on the package (members can be read afterwards: icon, help, module).
