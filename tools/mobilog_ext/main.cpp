@@ -30,6 +30,7 @@ int usage() {
                     "Loja:\n"
                     "  catalog <mobilog_store> [--key <loja>.secret] [--name \"Loja Mobilog\"] [--updated-from-git <repo>]\n"
                     "                                                           escreve catalog.json (e .sig)\n"
+                    "  doc api [--lang pt|en] [-o arquivo.md]                    a referência da API (docs/*/api.md)\n"
                     "\n"
                     "Documentação: docs/pt (guia rápido, manual, FAQ).\n",
                     "mobilog_ext: Mobilog extensions (.mlx)\n"
@@ -52,6 +53,7 @@ int usage() {
                     "Store:\n"
                     "  catalog <mobilog_store> [--key <store>.secret] [--name \"Mobilog Store\"] [--updated-from-git <repo>]\n"
                     "                                                           writes catalog.json (and .sig)\n"
+                    "  doc api [--lang pt|en] [-o file.md]                       the API reference (docs/*/api.md)\n"
                     "\n"
                     "Documentation: docs/en (quick start, manual, FAQ).\n"));
     return 2;
@@ -70,6 +72,7 @@ int main(int argc, char** argv) {
     if (cmd == "check") return cmdCheck(a);
     if (cmd == "test") return cmdTest(a);
     if (cmd == "catalog") return cmdCatalog(a);
+    if (cmd == "doc") return cmdDoc(a);
     if (cmd == "keygen") return cmdKeygen(a);
     if (cmd == "pack") return cmdPack(a);
     if (cmd == "sign") return cmdSign(a);

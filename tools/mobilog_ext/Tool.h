@@ -55,6 +55,7 @@ int cmdBuild(const Args& a);
 int cmdCheck(const Args& a);
 int cmdCatalog(const Args& a);
 int cmdTest(const Args& a);
+int cmdDoc(const Args& a);
 
 // build: the module and the package of one source folder (used by check and test too).
 struct Built {

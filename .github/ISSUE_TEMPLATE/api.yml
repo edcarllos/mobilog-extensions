@@ -1,0 +1,14 @@
+name: Pedido de API / API request
+description: Uma função ou evento que falta no SDK / a function or event missing from the SDK
+labels: [api]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: O que a extensão precisa fazer / what the extension needs to do
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposta (função, pedido → resposta, permissão) / proposal (function, request → answer, permission)

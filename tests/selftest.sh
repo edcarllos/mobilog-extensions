@@ -9,6 +9,7 @@ export MOBILOG_EXT_LANG=en
 # A copy with what the tool needs (the SDK, the format headers, the templates; wasi-sdk by link).
 mkdir -p "$work/repo/extensions" "$work/repo/external"
 cp -r "$repo/sdk" "$repo/mlx" "$repo/templates" "$work/repo/"
+mkdir -p "$work/repo/extensions"
 if [ -n "${WASI_SDK_PREFIX:-}" ]; then ln -s "$WASI_SDK_PREFIX" "$work/repo/external/wasi-sdk"
 else ln -s "$(realpath "$repo/external/wasi-sdk")" "$work/repo/external/wasi-sdk"; fi
 cd "$work/repo"
@@ -59,4 +60,9 @@ cp manifest.bak "$e/manifest.json"
 sed -i.tmp 's/"id": "io.github.selftest.c"/"id": "mobilog.selftest"/' "$e/manifest.json"
 expect_fail "$tool" build "$e"
 cp manifest.bak "$e/manifest.json"
+# The API reference is the one the tool writes (docs/*/api.md: generated, never edited by hand).
+for lang in pt en; do
+  "$tool" doc api --lang $lang -o "api-$lang.md"
+  cmp -s "api-$lang.md" "$repo/docs/$lang/api.md" || fail "docs/$lang/api.md is stale: mobilog_ext doc api --lang $lang -o docs/$lang/api.md"
+done
 echo "selftest: OK"

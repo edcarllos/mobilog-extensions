@@ -10,7 +10,7 @@ if(NOT TARGET nanosvg)
   target_include_directories(nanosvg SYSTEM INTERFACE ${nanosvg_SOURCE_DIR}/src)
 endif()
 
-add_executable(mobilog_ext main.cpp Common.cpp Pack.cpp Build.cpp Check.cpp Catalog.cpp TestHost.cpp)
+add_executable(mobilog_ext main.cpp Common.cpp Pack.cpp Build.cpp Check.cpp Catalog.cpp TestHost.cpp Doc.cpp)
 target_link_libraries(mobilog_ext PRIVATE mlx_format mlx_json mobilog_vrp nanosvg)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(mobilog_ext PRIVATE -Wall -Wextra)

@@ -1,0 +1,14 @@
+name: Ideia de extensão / Extension idea
+description: Uma extensão que você gostaria que existisse / an extension you would like to exist
+labels: [ideia]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: O que ela faria e para quem / what it would do and for whom
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: Como ficaria no app (painel, camada, ferramenta...) / how it would look in the app

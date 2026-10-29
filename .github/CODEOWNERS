@@ -1,0 +1,7 @@
+# Quem aprova mudanças em cada pasta / who approves changes in each folder.
+# Ao aceitar uma extensão nova, o mantenedor acrescenta a linha do autor dela:
+#   /extensions/io.github.fulano.nome/  @fulano @edcarllos
+*                    @edcarllos
+/extensions/OFFICIAL @edcarllos
+/keys/               @edcarllos
+/.github/            @edcarllos

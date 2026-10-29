@@ -1,0 +1,27 @@
+name: Problema numa extensão / Bug in an extension
+description: Algo não funciona como deveria / something does not work as it should
+labels: [bug]
+body:
+  - type: input
+    id: ext
+    attributes:
+      label: Extensão e versão / extension and version
+      placeholder: mobilog.exemplo.onibus 1.0.2
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: Mobilog (versão e aparelho) / Mobilog (version and device)
+      placeholder: 0.17.0 · Linux / Android / navegador
+  - type: textarea
+    id: what
+    attributes:
+      label: O que aconteceu e o que era esperado / what happened and what was expected
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Registro da extensão / the extension's log (Sistema → Extensões → a extensão → Registro)
+      render: text
