@@ -1,0 +1,23 @@
+# Weekly (and on request): every package in the store must still be the build of its sources.
+name: Conferir a loja / Check the store
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  drift:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: external/downloads
+          key: wasi-sdk-34-x86_64-linux
+      - name: wasi-sdk e mobilog_ext / wasi-sdk and mobilog_ext
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
+          scripts/setup.sh
+      - name: Os pacotes são o build dos fontes / the packages are the build of their sources
+        run: scripts/drift.py

@@ -1,0 +1,47 @@
+# On main: every extension whose version is not in the store yet is built from its sources, checked,
+# signed with the store's key (the secret MOBILOG_STORE_KEY) and published in mobilog_store/, with the
+# index (catalog.json) written and signed again. The app reads the store from there.
+name: Publicar a loja / Publish the store
+on:
+  push:
+    branches: [main]
+    paths: ["extensions/**", "sdk/**", "mlx/**", "tools/**", "keys/**"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: publish-store
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    environment: loja
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/cache@v4
+        with:
+          path: external/downloads
+          key: wasi-sdk-34-x86_64-linux
+      - name: wasi-sdk e mobilog_ext / wasi-sdk and mobilog_ext
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
+          scripts/setup.sh
+      - name: Publicar / publish
+        env:
+          MOBILOG_STORE_KEY: ${{ secrets.MOBILOG_STORE_KEY }}
+        run: |
+          test -n "$MOBILOG_STORE_KEY" || { echo "falta o segredo MOBILOG_STORE_KEY / missing secret" >&2; exit 1; }
+          umask 077
+          key="$RUNNER_TEMP/loja.secret"
+          printf '%s\n' "$MOBILOG_STORE_KEY" > "$key"
+          scripts/publish-store.sh "$key"
+          rm -f "$key"
+      - name: Gravar / commit
+        run: |
+          git add mobilog_store
+          if git diff --cached --quiet; then echo "nada novo / nothing new"; exit 0; fi
+          git -c user.name="Loja Mobilog" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "loja: $(git diff --cached --name-only -- 'mobilog_store/*.mlx' | xargs -n1 basename | tr '\n' ' ')"
+          git push

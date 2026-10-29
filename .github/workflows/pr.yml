@@ -1,0 +1,28 @@
+# Pull requests: each changed extension is checked as the store does (a new version, the store's
+# rules), built twice (the same bytes) and run without the app; the tool, the format and the
+# generated API reference are tested too. No secrets here: nothing is signed in a pull request.
+name: Conferir / Check
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/cache@v4
+        with:
+          path: external/downloads
+          key: wasi-sdk-34-x86_64-linux
+      - name: wasi-sdk e mobilog_ext / wasi-sdk and mobilog_ext
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ninja-build
+          scripts/setup.sh
+      - name: Autoteste / self-test
+        run: ctest --test-dir build --output-on-failure
+      - name: Extensões alteradas / changed extensions
+        run: scripts/check-changed.sh origin/${{ github.base_ref }}
