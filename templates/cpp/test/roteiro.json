@@ -1,0 +1,7 @@
+[
+  {"network": 1},
+  {"frames": 30},
+  {"panel": "principal"},
+  {"click": 1, "in": "principal"},
+  {"frames": 30}
+]

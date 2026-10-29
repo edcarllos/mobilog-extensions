@@ -1,0 +1,11 @@
+{
+  "name": "Extensões do Mobilog",
+  "build": { "dockerfile": "Dockerfile" },
+  "postCreateCommand": "scripts/setup.sh",
+  "remoteEnv": { "PATH": "${containerWorkspaceFolder}/build/tools/mobilog_ext:${containerEnv:PATH}" },
+  "customizations": {
+    "vscode": {
+      "extensions": ["llvm-vs-code-extensions.vscode-clangd", "ms-vscode.cmake-tools"]
+    }
+  }
+}

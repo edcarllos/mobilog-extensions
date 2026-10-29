@@ -41,9 +41,13 @@ add_library(mlx_format STATIC
   src/Package.cpp
   src/Metering.cpp
   src/Catalog.cpp
-  src/Official.cpp)
+  src/Official.cpp
+  src/Api.cpp)
 target_include_directories(mlx_format PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(mlx_format SYSTEM PRIVATE ${MLX_JSON_INCLUDE})
+# nlohmann/json for the tools built with the format (mobilog_ext).
+add_library(mlx_json INTERFACE)
+target_include_directories(mlx_json SYSTEM INTERFACE ${MLX_JSON_INCLUDE})
 target_link_libraries(mlx_format PUBLIC monocypher libdeflate::libdeflate_static)
 target_compile_features(mlx_format PUBLIC cxx_std_20)
 set_target_properties(mlx_format PROPERTIES POSITION_INDEPENDENT_CODE ON)

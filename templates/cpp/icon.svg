@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Ícone da extensão: 48 × 48, só formas (sem texto nem imagens), legível nos temas claro e escuro. -->
+  <rect x="2" y="2" width="44" height="44" rx="11" fill="#2563EB"/>
+  <path d="M14 30 L22 22 L28 27 L36 17" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="36" cy="17" r="3.5" fill="#FDE047"/>
+</svg>

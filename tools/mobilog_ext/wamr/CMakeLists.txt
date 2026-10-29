@@ -1,0 +1,67 @@
+# WAMR (WebAssembly Micro Runtime, Apache-2.0 with LLVM exception): the interpreter of
+# `mobilog_ext test`. Built in its own directory because WAMR's build scripts set
+# directory-wide include paths, definitions and C flags.
+#
+# Configuration (mobilog_ext test, TestHost.cpp; the app used the same until 0.13):
+# - fast interpreter only: no JIT or AOT (the same behaviour on every system);
+# - no WASI or libc from WAMR: the tool provides the few calls extensions may make (no files);
+# - no hardware bound checks: no 8 GB reservations per instance, no signal handlers;
+# - invokeNative in C (no assembly per platform): the imports are "raw" natives anyway;
+# - only the features the install check accepts (bulk memory; no SIMD, threads, references...).
+set(WAMR_ROOT_DIR ${wamr_SOURCE_DIR})
+if(WIN32)
+  set(WAMR_BUILD_PLATFORM "windows")
+elseif(ANDROID)
+  set(WAMR_BUILD_PLATFORM "android")
+elseif(APPLE)
+  set(WAMR_BUILD_PLATFORM "darwin")
+else()
+  set(WAMR_BUILD_PLATFORM "linux")
+endif()
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64|ARM64)" OR (APPLE AND CMAKE_OSX_ARCHITECTURES STREQUAL "arm64"))
+  set(WAMR_BUILD_TARGET "AARCH64")
+else()
+  set(WAMR_BUILD_TARGET "X86_64")
+endif()
+set(WAMR_BUILD_INTERP 1)
+set(WAMR_BUILD_FAST_INTERP 1)
+set(WAMR_BUILD_AOT 0)
+set(WAMR_BUILD_JIT 0)
+set(WAMR_BUILD_FAST_JIT 0)
+set(WAMR_BUILD_LIBC_BUILTIN 0)
+set(WAMR_BUILD_LIBC_WASI 0)
+set(WAMR_BUILD_MULTI_MODULE 0)
+set(WAMR_BUILD_THREAD_MGR 0)
+set(WAMR_BUILD_LIB_PTHREAD 0)
+set(WAMR_BUILD_SHARED_MEMORY 0)
+set(WAMR_BUILD_BULK_MEMORY 1)
+set(WAMR_BUILD_SIMD 0)
+set(WAMR_BUILD_REF_TYPES 0)
+set(WAMR_BUILD_GC 0)
+set(WAMR_BUILD_EXCE_HANDLING 0)
+set(WAMR_BUILD_TAIL_CALL 0)
+set(WAMR_BUILD_MEMORY64 0)
+set(WAMR_BUILD_MINI_LOADER 0)
+set(WAMR_BUILD_DEBUG_INTERP 0)
+set(WAMR_BUILD_DUMP_CALL_STACK 0)
+set(WAMR_BUILD_LOAD_CUSTOM_SECTION 0)
+set(WAMR_BUILD_INVOKE_NATIVE_GENERAL 1)
+set(WAMR_DISABLE_HW_BOUND_CHECK 1)
+set(WAMR_DISABLE_STACK_HW_BOUND_CHECK 1)
+set(WAMR_DISABLE_WAKEUP_BLOCKING_OP 1)
+set(WAMR_DISABLE_APP_ENTRY 1)
+include(${wamr_SOURCE_DIR}/build-scripts/runtime_lib.cmake)
+add_library(mlx_wamr STATIC ${WAMR_RUNTIME_LIB_SOURCE})
+target_include_directories(mlx_wamr SYSTEM PUBLIC ${wamr_SOURCE_DIR}/core/iwasm/include)
+# No LTO: WAMR declares its (unused here) invokeNative with two different types across files.
+set_target_properties(mlx_wamr PROPERTIES POSITION_INDEPENDENT_CODE ON INTERPROCEDURAL_OPTIMIZATION OFF)
+if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+  target_compile_options(mlx_wamr PRIVATE -w)  # third-party code: its warnings are not ours
+endif()
+if(NOT WIN32)
+  find_package(Threads REQUIRED)
+  target_link_libraries(mlx_wamr PUBLIC Threads::Threads ${CMAKE_DL_LIBS})
+  if(NOT APPLE AND NOT ANDROID)
+    target_link_libraries(mlx_wamr PUBLIC m)
+  endif()
+endif()

@@ -1,0 +1,26 @@
+{
+  "id": "{{ID}}",
+  "name": "{{NAME}}",
+  "name@en": "{{NAME}}",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "author": "{{AUTHOR}}",
+  "license": "MIT",
+  "summary": "Mostra quantos veículos rodam agora e marca o centro do mapa.",
+  "summary@en": "Shows how many vehicles are running and marks the center of the map.",
+  "description": "Um ponto de partida: um painel com os veículos da simulação e um botão que marca o centro do mapa numa camada própria.",
+  "description@en": "A starting point: a panel with the simulation's vehicles and a button that marks the center of the map on a layer of its own.",
+  "category": "ferramentas",
+  "keywords": ["exemplo"],
+  "entry": "extension.wasm",
+  "icon": "icon.svg",
+  "help": "help.md",
+  "help@en": "help.en.md",
+  "changelog": "CHANGELOG.md",
+  "permissions": ["mapa.ler", "simulacao.ler", "mapa.desenhar"],
+  "limits": {"memoryMB": 64},
+  "contributes": [
+    {"kind": "painel", "id": "principal", "title": "{{NAME}}"},
+    {"kind": "camada", "id": "marcas", "title": "Marcas de {{NAME}}"}
+  ]
+}
