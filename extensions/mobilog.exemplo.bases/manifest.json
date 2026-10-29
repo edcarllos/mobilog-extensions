@@ -1,0 +1,28 @@
+{
+  "id": "mobilog.exemplo.bases",
+  "name": "Localização de bases",
+  "name@en": "Base location",
+  "version": "1.0.1",
+  "apiVersion": 1,
+  "author": "Mobilog (exemplo do SDK)",
+  "license": "MIT",
+  "summary": "Escolhe onde abrir bases pelo tempo médio ou pela cobertura.",
+  "summary@en": "Picks where to open bases by mean time or by coverage.",
+  "description": "Escolhe onde abrir bases (ambulâncias, depósitos, lojas) entre candidatos marcados no mapa, pelo menor tempo médio ou pela maior cobertura, com os tempos de viagem da simulação.",
+  "description@en": "Chooses where to open bases (ambulances, depots, shops) among candidates marked on the map, by the lowest mean time or the widest coverage, with the travel times of the simulation.",
+  "category": "analise",
+  "keywords": ["localização", "cobertura", "ambulância", "depósito"],
+  "repository": "https://github.com/edcarllos/mobilog-extensions/tree/main/extensions/mobilog.exemplo.bases",
+  "entry": "extension.wasm",
+  "help": "help.md",
+  "help@en": "help.en.md",
+  "icon": "icon.svg",
+  "changelog": "CHANGELOG.md",
+  "permissions": ["mapa.ler", "mapa.desenhar", "mapa.ferramentas"],
+  "limits": {"memoryMB": 64},
+  "contributes": [
+    {"kind": "painel", "id": "bases", "title": "Bases"},
+    {"kind": "camada", "id": "bases", "title": "Bases e áreas atendidas"},
+    {"kind": "ferramenta", "id": "candidatos", "title": "Marcar candidatos"}
+  ]
+}

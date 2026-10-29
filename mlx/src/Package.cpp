@@ -1,5 +1,7 @@
 #include "mlx/Package.h"
 
+#include "mlx/Official.h"
+
 #include <algorithm>
 
 namespace mobilog::ext {
@@ -23,8 +25,11 @@ PackageCheck checkPackage(Bytes mlx, const PackageOptions& opt, ZipReader& zip) 
         r.problems.push_back("o pacote não tem manifest.json");
         return r;
     }
+    // The signature first: one by the store's key lets the package use the reserved ids.
+    r.signature = verifyPackage(zip);
+    r.storeSigned = r.signature.status == SigStatus::Valid && isStoreKey(r.signature.key);
     std::vector<std::string> problems;
-    parseManifest(std::string(raw.begin(), raw.end()), {opt.appVersion, opt.builtin}, r.manifest, problems);
+    parseManifest(std::string(raw.begin(), raw.end()), {opt.appVersion, opt.builtin, r.storeSigned}, r.manifest, problems);
     r.problems.insert(r.problems.end(), problems.begin(), problems.end());
 
     for (const std::string& f : r.manifest.namedFiles())
@@ -36,7 +41,6 @@ PackageCheck checkPackage(Bytes mlx, const PackageOptions& opt, ZipReader& zip) 
             for (auto& p : problems) r.problems.push_back(r.manifest.entry + ": " + p);
     }
 
-    r.signature = verifyPackage(zip);
     if (r.signature.status == SigStatus::Invalid) r.problems.push_back("assinatura: " + r.signature.error);
     r.ok = r.problems.empty();
     return r;

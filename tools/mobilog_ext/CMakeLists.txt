@@ -11,7 +11,7 @@ if(NOT TARGET nanosvg)
 endif()
 
 add_executable(mobilog_ext main.cpp Common.cpp Pack.cpp Build.cpp Check.cpp Catalog.cpp TestHost.cpp)
-target_link_libraries(mobilog_ext PRIVATE mlx_format mlx_json nanosvg)
+target_link_libraries(mobilog_ext PRIVATE mlx_format mlx_json mobilog_vrp nanosvg)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(mobilog_ext PRIVATE -Wall -Wextra)
 endif()

@@ -1,6 +1,9 @@
 #include "mlx/Official.h"
 
+#include "mlx/Package.h"
+
 #include <algorithm>
+#include <mutex>
 #include <iterator>
 
 namespace mobilog::ext {
@@ -18,6 +21,46 @@ const char* const kLegacy[] = {
 
 bool officialExample(const std::string& sha512Hex) {
     return !sha512Hex.empty() && std::find(std::begin(kLegacy), std::end(kLegacy), sha512Hex) != std::end(kLegacy);
+}
+
+// keys/*.pub, written into StoreKeys.cpp by mlx/CMakeLists.txt.
+extern const char* const kStoreKeyLines[];
+extern const size_t kStoreKeyCount;
+
+namespace {
+std::mutex& keysMutex() {
+    static std::mutex m;
+    return m;
+}
+std::vector<PublicKey>& keyList() {
+    static std::vector<PublicKey> keys = [] {
+        std::vector<PublicKey> out;
+        for (size_t i = 0; i < kStoreKeyCount; ++i) {
+            PublicKey k{};
+            if (parsePublicKey(kStoreKeyLines[i], k)) out.push_back(k);
+        }
+        return out;
+    }();
+    return keys;
+}
+}  // namespace
+
+const std::vector<PublicKey>& storeKeys() { return keyList(); }
+
+bool isStoreKey(const PublicKey& key) {
+    std::lock_guard<std::mutex> lock(keysMutex());
+    const auto& keys = keyList();
+    return std::find(keys.begin(), keys.end(), key) != keys.end();
+}
+
+void addStoreKey(const PublicKey& key) {
+    std::lock_guard<std::mutex> lock(keysMutex());
+    auto& keys = keyList();
+    if (std::find(keys.begin(), keys.end(), key) == keys.end()) keys.push_back(key);
+}
+
+bool officialPackage(const PackageCheck& c) {
+    return (c.storeSigned && reservedExtensionId(c.manifest.id)) || officialExample(c.sha512);
 }
 
 }  // namespace mobilog::ext

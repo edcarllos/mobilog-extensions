@@ -22,6 +22,7 @@ struct PackageCheck {
     WasmModule module;      // when the entry is a .wasm
     std::string sha512;     // of the whole .mlx (hex): identifies this exact package
     uint64_t size = 0;
+    bool storeSigned = false;  // signed by one of the store's keys (mlx/Official.h)
 };
 
 struct PackageOptions {

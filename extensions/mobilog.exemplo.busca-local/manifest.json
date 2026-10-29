@@ -1,0 +1,26 @@
+{
+  "id": "mobilog.exemplo.busca-local",
+  "name": "Busca local 2-opt / Or-opt",
+  "name@en": "Local search 2-opt / Or-opt",
+  "version": "1.0.1",
+  "apiVersion": 1,
+  "author": "Mobilog (exemplo do SDK)",
+  "license": "MIT",
+  "summary": "Um resolvedor de rotas simples: vizinho mais próximo, 2-opt e Or-opt.",
+  "summary@en": "A simple route solver: nearest neighbour, 2-opt and Or-opt.",
+  "description": "Um resolvedor de roteirização escrito como extensão: vizinho mais próximo, 2-opt e Or-opt, com busca local iterada. Aparece em Algoritmos e na Bancada.",
+  "description@en": "A routing solver written as an extension: nearest neighbour, 2-opt and Or-opt, with iterated local search. It shows in Algorithms and in the Benchmark.",
+  "category": "rotas",
+  "keywords": ["roteirização", "2-opt", "exemplo", "sdk"],
+  "repository": "https://github.com/edcarllos/mobilog-extensions/tree/main/extensions/mobilog.exemplo.busca-local",
+  "entry": "extension.wasm",
+  "help": "help.md",
+  "help@en": "help.en.md",
+  "icon": "icon.svg",
+  "changelog": "CHANGELOG.md",
+  "permissions": [],
+  "limits": {"memoryMB": 64},
+  "contributes": [
+    {"kind": "resolvedor", "id": "busca-local", "title": "Busca local (extensão)"}
+  ]
+}

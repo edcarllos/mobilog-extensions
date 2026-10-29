@@ -1,0 +1,28 @@
+{
+  "id": "mobilog.exemplo.onibus",
+  "name": "Ônibus em linha",
+  "name@en": "Bus line",
+  "version": "1.0.2",
+  "apiVersion": 1,
+  "author": "Mobilog (exemplo do SDK)",
+  "license": "MIT",
+  "summary": "Uma linha de ônibus no meio do trânsito simulado, com regularidade.",
+  "summary@en": "A bus line in the simulated traffic, with its regularity.",
+  "description": "Uma linha de ônibus circular desenhada no mapa, com ônibus rodando no meio do trânsito da simulação: intervalo, tempo de parada, tempo de volta e regularidade.",
+  "description@en": "A circular bus line drawn on the map, with buses running in the traffic of the simulation: headway, dwell time, round-trip time and regularity.",
+  "category": "transporte",
+  "keywords": ["ônibus", "transporte público", "linha", "intervalo"],
+  "repository": "https://github.com/edcarllos/mobilog-extensions/tree/main/extensions/mobilog.exemplo.onibus",
+  "entry": "extension.wasm",
+  "help": "help.md",
+  "help@en": "help.en.md",
+  "icon": "icon.svg",
+  "changelog": "CHANGELOG.md",
+  "permissions": ["mapa.ler", "simulacao.ler", "mapa.desenhar", "mapa.ferramentas", "veiculos.controlar"],
+  "limits": {"memoryMB": 64},
+  "contributes": [
+    {"kind": "painel", "id": "linha", "title": "Ônibus"},
+    {"kind": "camada", "id": "linha", "title": "Linha de ônibus"},
+    {"kind": "ferramenta", "id": "paradas", "title": "Marcar paradas"}
+  ]
+}

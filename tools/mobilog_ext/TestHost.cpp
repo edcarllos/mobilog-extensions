@@ -16,6 +16,7 @@
 #include "mlx/Api.h"
 #include "mlx/Metering.h"
 #include "mlx/Wire.h"
+#include "mobilog/vrp/VrpWire.h"
 
 #include <nlohmann/json.hpp>
 
@@ -75,6 +76,14 @@ struct Host {
     std::string trap;
     double callStart = 0;
 
+    std::vector<std::string> solvers;  // declared (solver.declare) during the hooks
+    // Solver mode: one run of a solver on an instance (solver.params, solver.offer, solver.progress).
+    const mobilog::opt::VrpInstance* vrp = nullptr;
+    double solverStart = 0, timeLimit = 1.0;
+    int offers = 0, feasibleOffers = 0;
+    uint64_t iterations = 0;
+    double bestCost = -1;
+
     wasm_module_t module = nullptr;
     wasm_module_inst_t inst = nullptr;
     wasm_exec_env_t exec = nullptr;
@@ -113,7 +122,38 @@ struct Host {
     }
 
     // An API function: what the app would answer with no area open.
+    int32_t solverCall(uint32_t fn, const std::string& in, Bytes& out) {
+        WireReader r(reinterpret_cast<const uint8_t*>(in.data()), in.size());
+        WireWriter w;
+        switch (fn) {
+        case kFnEcho: out.assign(in.begin(), in.end()); return 0;
+        case kFnSolverParams:
+            w.u64(7).f64(timeLimit).f64((nowMs() - solverStart) / 1000.0).u32(3);
+            w.str("_copy").f32(0).str("_copies").f32(1).str("_sliced").f32(1);
+            out = w.bytes();
+            return 0;
+        case kFnSolverOffer: {
+            mobilog::opt::VrpSolution sol;
+            if (!mobilog::opt::decodeRoutes(r, *vrp, sol.routes)) {
+                stats.errors.push_back(tr("solver.offer: rotas malformadas (índices fora da instância?)", "solver.offer: malformed routes (indices out of the instance?)"));
+                return kErrInvalid;
+            }
+            mobilog::opt::evaluate(*vrp, sol);  // the app's own figures
+            ++offers;
+            const bool better = sol.feasible && (bestCost < 0 || sol.cost < bestCost - 1e-9);
+            if (sol.feasible) ++feasibleOffers;
+            if (better) bestCost = sol.cost;
+            w.f64(sol.cost).u8(sol.feasible ? 1 : 0).u8(better ? 1 : 0);
+            out = w.bytes();
+            return 0;
+        }
+        case kFnSolverProgress: iterations += r.u64(); return 0;
+        default: return apiFunction(fn) ? kErrUnavailable : kErrUnknown;
+        }
+    }
+
     int32_t call(uint32_t fn, const std::string& in, Bytes& out) {
+        if (vrp) return solverCall(fn, in, out);
         const ApiFunctionInfo* f = apiFunction(fn);
         if (!f) return kErrUnknown;
         const std::string name = f->name;
@@ -132,6 +172,16 @@ struct Host {
         }
         switch (fn) {
         case kFnEcho: out.assign(in.begin(), in.end()); return 0;
+        case kFnSolverDeclare: {  // a solver of the manifest's "resolvedor" contributions
+            WireReader r(reinterpret_cast<const uint8_t*>(in.data()), in.size());
+            const std::string id = r.str();
+            if (!manifest.contribution(ContributionKind::Solver, id)) {
+                stats.errors.push_back("solver.declare: '" + id + tr("' não está em contributes (resolvedor)", "' is not in contributes (resolvedor)"));
+                return kErrNotFound;
+            }
+            solvers.push_back(id);
+            return 0;
+        }
         case kFnSubscribe:
             if (in.size() >= 4) std::memcpy(&stats.subscribed, in.data(), 4);
             return 0;
@@ -168,8 +218,9 @@ struct Host {
             return 0;
         }
         if (n == "progress") return 0;
-        if (n == "cancelled") return 0;
+        if (n == "cancelled") return vrp && (nowMs() - solverStart) > timeLimit * 1000 ? 1 : 0;
         if (n == "check") {
+            if (vrp) return (nowMs() - solverStart) > timeLimit * 1000 + kHookBudgetMs ? (raise(tr("o resolvedor não parou no tempo", "the solver did not stop in time")), 0) : kMeterSlice;
             if (nowMs() - callStart > kHookBudgetMs) {
                 raise(tr("travou: passou de 2 s sem responder", "hung: more than 2 s without answering"));
                 return 0;
@@ -357,6 +408,76 @@ bool initRuntime() {
     return ok;
 }
 
+bool openModule(Host& h, const Bytes& metered, std::string& err) {
+    h.bytes = metered;
+    char errbuf[256] = {};
+    h.module = wasm_runtime_load(h.bytes.data(), uint32_t(h.bytes.size()), errbuf, sizeof errbuf);
+    if (!h.module) return err = std::string(tr("módulo recusado: ", "module refused: ")) + errbuf, false;
+    h.inst = wasm_runtime_instantiate(h.module, kStackBytes, 0, errbuf, sizeof errbuf);
+    if (!h.inst || !(h.exec = wasm_runtime_create_exec_env(h.inst, kStackBytes)))
+        return err = std::string(tr("não foi possível iniciar o módulo: ", "could not start the module: ")) + errbuf, false;
+    return true;
+}
+
+// A small capacitated instance (CVRP): 20 customers around a depot, travel times from straight lines.
+mobilog::opt::VrpInstance testInstance() {
+    mobilog::opt::VrpInstance v;
+    std::mt19937 g(2026);
+    std::uniform_real_distribution<float> pos(0, 6000);
+    v.n = 20;
+    const uint32_t m = v.n + 1;
+    std::vector<std::pair<float, float>> p(m);
+    p[0] = {3000, 3000};
+    for (uint32_t i = 1; i < m; ++i) p[i] = {pos(g), pos(g)};
+    v.nodes.resize(m);
+    for (uint32_t i = 0; i < m; ++i) v.nodes[i] = i;
+    v.demand.assign(m, 0);
+    for (uint32_t i = 1; i < m; ++i) v.demand[i] = 1 + int(g() % 9);
+    v.vehicles = 6;
+    v.capacity = 30;
+    v.time.resize(size_t(m) * m);
+    for (uint32_t a = 0; a < m; ++a)
+        for (uint32_t b = 0; b < m; ++b)
+            v.time[size_t(a) * m + b] = std::hypot(p[a].first - p[b].first, p[a].second - p[b].second) / 10.0f;  // 10 m/s
+    return v;
+}
+
+// One declared solver on the test instance, as the app runs it: a fresh instance of the module,
+// mlx_task(solve) with the instance, then slices of 40 ms while it says "more", up to the time limit.
+bool runSolver(const Host& base, const std::string& id, const Bytes& metered, double seconds) {
+    Host h;
+    h.manifest = base.manifest;
+    std::string err;
+    if (!openModule(h, metered, err)) {
+        std::fprintf(stderr, "%s\n", err.c_str());
+        return false;
+    }
+    gHost = &h;
+    const mobilog::opt::VrpInstance inst = testInstance();
+    WireWriter w;
+    w.str(id);
+    mobilog::opt::encodeVrpInstance(inst, w);
+    mobilog::opt::encodeWarmStart(nullptr, w);
+    const Bytes input = w.bytes();
+    h.timeLimit = seconds;
+    bool ok = h.hook("_initialize", {}, nullptr);
+    int32_t ptr = 0, status = 0;
+    ok = ok && h.hook("mlx_alloc", {int32_t(input.size())}, &ptr) && ptr > 0 && h.write(uint32_t(ptr), input.data(), uint32_t(input.size()));
+    h.vrp = &inst;
+    h.solverStart = nowMs();
+    ok = ok && h.hook("mlx_task", {kTaskSolveVrp, ptr, int32_t(input.size())}, &status);
+    while (ok && status == 1 && nowMs() - h.solverStart < seconds * 1000) ok = h.hook("mlx_task", {kTaskSolveStep, 0, 40}, &status);
+    const double ms = nowMs() - h.solverStart;
+    gHost = nullptr;
+    std::printf(tr("  %-14s %4d soluções (%d viáveis) · melhor custo %s · %.0f ms (interpretado)\n",
+                   "  %-14s %4d solutions (%d feasible) · best cost %s · %.0f ms (interpreted)\n"),
+                id.c_str(), h.offers, h.feasibleOffers, h.bestCost < 0 ? "—" : std::to_string(int64_t(h.bestCost)).c_str(), ms);
+    for (const auto& e : h.stats.errors) std::fprintf(stderr, "%s (%s): %s\n", tr("erro", "error"), id.c_str(), e.c_str());
+    if (ok && h.stats.errors.empty() && h.feasibleOffers == 0)
+        std::fprintf(stderr, "%s (%s): %s\n", tr("erro", "error"), id.c_str(), tr("nenhuma solução viável oferecida", "no feasible solution offered"));
+    return ok && h.stats.errors.empty() && h.feasibleOffers > 0;
+}
+
 Bytes strBlock(const std::string& s) {
     WireWriter w;
     w.str(s);
@@ -398,16 +519,8 @@ int cmdTest(const Args& a) {
     Host h;
     gHost = &h;
     h.manifest = c.manifest;
-    h.bytes = std::move(metered);
-    char errbuf[256] = {};
-    h.module = wasm_runtime_load(h.bytes.data(), uint32_t(h.bytes.size()), errbuf, sizeof errbuf);
-    if (!h.module) {
-        std::fprintf(stderr, "%s: %s\n", tr("módulo recusado", "module refused"), errbuf);
-        return 1;
-    }
-    h.inst = wasm_runtime_instantiate(h.module, kStackBytes, 0, errbuf, sizeof errbuf);
-    if (!h.inst || !(h.exec = wasm_runtime_create_exec_env(h.inst, kStackBytes))) {
-        std::fprintf(stderr, "%s: %s\n", tr("não foi possível iniciar o módulo", "could not start the module"), errbuf);
+    if (!openModule(h, metered, err)) {
+        std::fprintf(stderr, "%s\n", err.c_str());
         return 1;
     }
     const Manifest& m = c.manifest;
@@ -540,7 +653,15 @@ int cmdTest(const Args& a) {
                 double(memBytes) / 1048576.0, m.memoryMB, h.stats.logs, total);
     std::fflush(stdout);
     for (const auto& e : h.stats.errors) std::fprintf(stderr, "%s: %s\n", tr("erro", "error"), e.c_str());
-    if (!h.stats.errors.empty()) {
+    // The solvers it declared, each on a small CVRP: they must offer feasible solutions.
+    bool solversOk = true;
+    if (ok && !h.solvers.empty()) {
+        std::printf("%s\n", tr("Resolvedores (CVRP de teste, 20 clientes, 6 veículos de capacidade 30):",
+                               "Solvers (test CVRP, 20 customers, 6 vehicles of capacity 30):"));
+        for (const std::string& id : h.solvers) solversOk = runSolver(h, id, metered, 1.0) && solversOk;
+        std::fflush(stdout);
+    }
+    if (!h.stats.errors.empty() || !solversOk) {
         std::fprintf(stderr, "%s\n", tr("FALHOU", "FAILED"));
         return 1;
     }

@@ -37,9 +37,10 @@ std::string catalogPackageUrl(std::string_view catalogUrl, std::string_view file
 namespace {
 
 bool entryOf(const Bytes& mlx, bool example, CatalogEntry& e, std::string& problem) {
-    example = example || officialExample(mlx);  // one of the Mobilog's, put in the folder
+    example = example || officialExample(mlx);  // one of the Mobilog's from before the store, put in the folder
     ZipReader zip;
     const PackageCheck c = checkPackage(mlx, {"", example}, zip);
+    example = example || officialPackage(c);  // signed by the store with a reserved id
     if (!c.ok) {
         problem = c.problems.empty() ? "pacote inválido" : c.problems.front();
         return false;
@@ -240,10 +241,10 @@ bool addToCatalog(const std::string& dir, Bytes mlx, const SigningKey* signWith,
                   bool* signedNow, bool replaceOlder) {
     if (signedNow) *signedNow = false;
     ZipReader zip;
-    // One of the Mobilog's examples goes in as it is (never signed again: the apps know it by its bytes).
-    const bool official = officialExample(mlx);
-    if (official) signWith = nullptr;
-    PackageCheck c = checkPackage(mlx, {"", official}, zip);
+    // One of the Mobilog's goes in as it is (never signed again: the apps know it by its bytes or the store's signature).
+    const bool legacy = officialExample(mlx);
+    PackageCheck c = checkPackage(mlx, {"", legacy}, zip);
+    if (legacy || c.storeSigned) signWith = nullptr;
     if (!c.ok) {
         if (error) {
             *error = "pacote inválido";

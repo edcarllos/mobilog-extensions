@@ -220,7 +220,6 @@ bool buildFolder(const Args& a, const fs::path& dirIn, Built& out) {
         cmd.insert(cmd.end(), common.begin(), common.end());
         if (cxx) {
             cmd.insert(cmd.end(), {"-std=c++20", "-fno-exceptions", "-fno-rtti"});
-            if (cfg.wasi) cmd.push_back("-mexec-model=reactor");
         } else {
             cmd.push_back("-std=c17");
         }

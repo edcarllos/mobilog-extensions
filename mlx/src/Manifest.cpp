@@ -79,10 +79,11 @@ bool containsMobilog(std::string_view s) {
     return low.find("mobilog") != std::string::npos;
 }
 
-bool reservedId(std::string_view id) {
+}  // namespace
+
+bool reservedExtensionId(std::string_view id) {
     return id.rfind("mobilog.", 0) == 0 || id.rfind("io.github.edcarllos.", 0) == 0 || id == "io.github.edcarllos";
 }
-}  // namespace
 
 const char* contributionKindKey(ContributionKind k) {
     for (const auto& kk : kKinds)
@@ -237,8 +238,9 @@ bool parseManifest(std::string_view text, const ManifestOptions& opt, Manifest& 
 
     if (str("id", m.id, true, 0) && !validExtensionId(m.id))
         problems.push_back("id: use letras minúsculas, números e '-', em partes separadas por ponto (ex.: br.ufsb.minha-extensao)");
-    if (!opt.builtin && reservedId(m.id)) problems.push_back("id: reservado para as extensões do Mobilog");
-    if (str("name", m.name, true, 40) && !opt.builtin && containsMobilog(m.name))
+    const bool reserved = opt.builtin || opt.reserved;  // the app's own, or a package signed by the store
+    if (!reserved && reservedExtensionId(m.id)) problems.push_back("id: reservado para as extensões do Mobilog");
+    if (str("name", m.name, true, 40) && !reserved && containsMobilog(m.name))
         problems.push_back("name: o nome \"Mobilog\" é reservado");
     // Translations: name@en, summary@en, description@en (help@en, a file, below).
     const auto langOf = [&](const std::string& k, size_t prefix, std::string& lang) {
@@ -253,7 +255,7 @@ bool parseManifest(std::string_view text, const ManifestOptions& opt, Manifest& 
         std::string lang, v;
         if (k.rfind("name@", 0) == 0) {
             if (langOf(k, 5, lang) && str(k.c_str(), v, false, 40) && !v.empty()) {
-                if (!opt.builtin && containsMobilog(v)) problems.push_back(k + ": o nome \"Mobilog\" é reservado");
+                if (!reserved && containsMobilog(v)) problems.push_back(k + ": o nome \"Mobilog\" é reservado");
                 m.names[lang] = v;
             }
         } else if (k.rfind("summary@", 0) == 0) {

@@ -1,0 +1,30 @@
+{
+  "id": "mobilog.rotas",
+  "name": "Rotas e entregas",
+  "name@en": "Routing and delivery",
+  "version": "2.0.1",
+  "apiVersion": 1,
+  "author": "Mobilog",
+  "license": "MIT",
+  "summary": "Os algoritmos de roteirização do Mobilog: do vizinho mais próximo ao HGS.",
+  "summary@en": "Mobilog's routing algorithms: from nearest neighbour to HGS.",
+  "description": "Os algoritmos de roteirização do Mobilog: vizinho mais próximo, Clarke-Wright, CW + busca local, ALNS e HGS. Instalado, abre Problemas, Aplicações (delivery em tempo real), Algoritmos e Bancada na aba Extensões.",
+  "description@en": "The routing algorithms of Mobilog: nearest neighbour, Clarke-Wright, CW + local search, ALNS and HGS. Installed, it opens Problems, Applications (real-time delivery), Algorithms and Benchmark in the Extensions tab.",
+  "category": "rotas",
+  "keywords": ["roteirização", "vrp", "entregas", "frota", "alns", "hgs"],
+  "repository": "https://github.com/edcarllos/mobilog-extensions/tree/main/extensions/mobilog.rotas",
+  "entry": "extension.wasm",
+  "help": "help.md",
+  "help@en": "help.en.md",
+  "icon": "icon.svg",
+  "changelog": "CHANGELOG.md",
+  "permissions": [],
+  "limits": {"memoryMB": 512},
+  "contributes": [
+    {"kind": "resolvedor", "id": "vizinho", "title": "Vizinho mais próximo"},
+    {"kind": "resolvedor", "id": "cw", "title": "Clarke-Wright"},
+    {"kind": "resolvedor", "id": "cwls", "title": "CW + busca local (paralelo)"},
+    {"kind": "resolvedor", "id": "alns", "title": "ALNS (paralelo)"},
+    {"kind": "resolvedor", "id": "hgs", "title": "HGS · genético híbrido (paralelo)"}
+  ]
+}

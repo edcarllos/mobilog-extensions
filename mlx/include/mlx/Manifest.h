@@ -116,6 +116,7 @@ struct Manifest {
 struct ManifestOptions {
     std::string appVersion;  // checks minAppVersion when set
     bool builtin = false;    // built-in extensions may use "nativa" and the reserved name/id
+    bool reserved = false;   // the reserved name/id only (a package signed by the store's key)
 };
 // Parses and validates. Problems are collected in Portuguese ("permissions: 'x' não existe");
 // returns true when there are none.
@@ -123,5 +124,7 @@ bool parseManifest(std::string_view json, const ManifestOptions& opt, Manifest& 
 std::string manifestJson(const Manifest& m);
 
 bool validExtensionId(std::string_view id);
+// "mobilog.*" (and the author's own namespace): only the Mobilog's packages may use them.
+bool reservedExtensionId(std::string_view id);
 
 }  // namespace mobilog::ext

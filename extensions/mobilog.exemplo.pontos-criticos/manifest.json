@@ -1,0 +1,28 @@
+{
+  "id": "mobilog.exemplo.pontos-criticos",
+  "name": "Pontos críticos",
+  "name@en": "Hot spots",
+  "version": "1.0.1",
+  "apiVersion": 1,
+  "author": "Mobilog (exemplo do SDK)",
+  "license": "MIT",
+  "summary": "Onde o trânsito está mais lento agora, numerado no mapa.",
+  "summary@en": "Where traffic is slowest right now, numbered on the map.",
+  "description": "Mostra onde o trânsito está mais lento agora: os trechos numerados no mapa, uma lista que leva o mapa até cada um e a lentidão da rede ao longo do tempo.",
+  "description@en": "Shows where traffic is slowest right now: the stretches numbered on the map, a list that takes the map to each one, and the slowness of the network over time.",
+  "category": "analise",
+  "keywords": ["congestionamento", "lentidão", "trânsito"],
+  "repository": "https://github.com/edcarllos/mobilog-extensions/tree/main/extensions/mobilog.exemplo.pontos-criticos",
+  "entry": "extension.wasm",
+  "help": "help.md",
+  "help@en": "help.en.md",
+  "icon": "icon.svg",
+  "changelog": "CHANGELOG.md",
+  "permissions": ["mapa.ler", "simulacao.ler", "mapa.desenhar"],
+  "limits": {"memoryMB": 64},
+  "contributes": [
+    {"kind": "painel", "id": "ranking", "title": "Pontos críticos"},
+    {"kind": "camada", "id": "criticos", "title": "Pontos críticos"},
+    {"kind": "grafico", "id": "lentidao", "title": "Lentidão da rede"}
+  ]
+}
