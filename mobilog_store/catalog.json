@@ -29,6 +29,7 @@
    "size": 13258,
    "summary": "Escolhe onde abrir bases pelo tempo médio ou pela cobertura.",
    "summary@en": "Picks where to open bases by mean time or by coverage.",
+   "updated": "2026-10-29",
    "version": "1.0.1"
   },
   {
@@ -56,6 +57,7 @@
    "size": 9672,
    "summary": "Um resolvedor de rotas simples: vizinho mais próximo, 2-opt e Or-opt.",
    "summary@en": "A simple route solver: nearest neighbour, 2-opt and Or-opt.",
+   "updated": "2026-10-29",
    "version": "1.0.1"
   },
   {
@@ -89,6 +91,7 @@
    "size": 12384,
    "summary": "Uma linha de ônibus no meio do trânsito simulado, com regularidade.",
    "summary@en": "A bus line in the simulated traffic, with its regularity.",
+   "updated": "2026-10-29",
    "version": "1.0.2"
   },
   {
@@ -119,6 +122,7 @@
    "size": 9734,
    "summary": "Onde o trânsito está mais lento agora, numerado no mapa.",
    "summary@en": "Where traffic is slowest right now, numbered on the map.",
+   "updated": "2026-10-29",
    "version": "1.0.1"
   },
   {
@@ -148,6 +152,7 @@
    "size": 74746,
    "summary": "Os algoritmos de roteirização do Mobilog: do vizinho mais próximo ao HGS.",
    "summary@en": "Mobilog's routing algorithms: from nearest neighbour to HGS.",
+   "updated": "2026-10-29",
    "version": "2.0.1"
   }
  ],
