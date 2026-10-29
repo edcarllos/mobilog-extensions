@@ -36,6 +36,8 @@ endif()
 # their id is reserved ("mobilog.*"), and "Verificada · Loja" otherwise.
 file(GLOB MLX_STORE_KEYS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../keys/*.pub")
 list(SORT MLX_STORE_KEYS)
+# A key file whose contents change configures again (the glob alone sees only added or removed files).
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${MLX_STORE_KEYS})
 set(MLX_STORE_KEY_LINES "")
 set(MLX_STORE_KEY_COUNT 0)
 foreach(f ${MLX_STORE_KEYS})

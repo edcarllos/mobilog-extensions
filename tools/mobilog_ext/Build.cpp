@@ -236,12 +236,13 @@ bool buildFolder(const Args& a, const fs::path& dirIn, Built& out) {
     link.insert(link.end(), common.begin(), common.end());
     if (anyCxx) link.insert(link.end(), {"-std=c++20", "-fno-exceptions", "-fno-rtti"});
     if (cfg.wasi) {
-        // A reactor (no main); no wasm-opt from the PATH (the bytes would depend on the machine);
-        // call_indirect's table index in one byte (wasi-sdk's libraries leave 5, which the app refuses).
-        link.insert(link.end(), {"-mexec-model=reactor", "--no-wasm-opt", "-Wl,--compress-relocations"});
+        // A reactor (no main); call_indirect's table index in one byte (wasi-sdk's libraries leave 5, which the app refuses).
+        link.insert(link.end(), {"-mexec-model=reactor", "-Wl,--compress-relocations"});
     } else {
         link.push_back("-Wl,--no-entry");
     }
+    // Never a wasm-opt found on the PATH: the bytes would depend on the machine (and the store's CI has none).
+    link.push_back("--no-wasm-opt");
     link.insert(link.end(), {"-Wl,--strip-all", "-Wl,--max-memory=" + std::to_string(uint64_t(m.memoryMB) << 20)});
     link.insert(link.end(), objects.begin(), objects.end());
     link.insert(link.end(), {"-o", out.wasm.string()});
