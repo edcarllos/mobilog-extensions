@@ -98,6 +98,9 @@ struct Manifest {
     std::string minAppVersion;
     std::string entry = "extension.wasm";
     std::string icon, help;
+    // Optional: the same symbol in one colour (an SVG, drawn like the app's icons: strokes on a 24 x 24
+    // grid). The app paints it in the theme's colour in its tabs and headers; the store shows `icon`.
+    std::string iconMono;
     uint32_t permissions = 0;
     std::vector<Contribution> contributes;
     uint32_t memoryMB = kDefaultMemoryMB;

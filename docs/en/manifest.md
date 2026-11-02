@@ -56,6 +56,7 @@ Permission, category and contribution keys are fixed words (in Portuguese).
 | `homepage`, `repository` | no | `https://` addresses |
 | `entry` | yes | the package's `.wasm` file |
 | `icon` | store | `icon.svg` (vector, ≤ 32 KB, shapes only) |
+| `iconMono` | no (recommended) | `icon-mono.svg`: the same symbol in one colour, like the app's icons; the app paints it in the theme's colour in its tabs and headers |
 | `help`, `help@<lang>` | store | the manual in Markdown (`help.md`, `help.en.md`) |
 | `changelog` | store | `CHANGELOG.md`, with a `## <version>` section for the current version |
 | `screenshots` | no | up to 4 `.png`/`.jpg` images in the package (≤ 300 KB each; 1280×720 suggested) |

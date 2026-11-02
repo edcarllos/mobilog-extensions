@@ -74,6 +74,8 @@ bool entryOf(const Bytes& mlx, bool example, CatalogEntry& e, std::string& probl
     if (m.icon.size() > 4 && m.icon.compare(m.icon.size() - 4, 4, ".svg") == 0 && zip.read(m.icon, icon, &err) &&
         icon.size() <= kMaxCatalogIcon)
         e.icon.assign(icon.begin(), icon.end());
+    Bytes mono;
+    if (!m.iconMono.empty() && zip.read(m.iconMono, mono, &err) && mono.size() <= kMaxCatalogIcon) e.iconMono.assign(mono.begin(), mono.end());
     return true;
 }
 
@@ -94,6 +96,7 @@ json entryJson(const CatalogEntry& e) {
     opt("minAppVersion", e.minAppVersion);
     opt("updated", e.updated);
     opt("icon", e.icon);
+    opt("iconMono", e.iconMono);
     if (e.apiVersion != 1) o["apiVersion"] = e.apiVersion;
     if (e.screenshots) o["screenshots"] = e.screenshots;
     if (!e.keywords.empty()) o["keywords"] = e.keywords;
@@ -232,6 +235,10 @@ bool parseCatalog(std::string_view text, Catalog& out, std::string* error) {
         if (x.contains("icon") && x["icon"].is_string()) {
             std::string svg = x["icon"].get<std::string>();
             if (svg.size() <= kMaxCatalogIcon && validUtf8(svg) && svg.find("<svg") != std::string::npos) e.icon = std::move(svg);
+        }
+        if (x.contains("iconMono") && x["iconMono"].is_string()) {
+            std::string svg = x["iconMono"].get<std::string>();
+            if (svg.size() <= kMaxCatalogIcon && validUtf8(svg) && svg.find("<svg") != std::string::npos) e.iconMono = std::move(svg);
         }
         if (x.contains("keywords") && x["keywords"].is_array())
             for (const json& w : x["keywords"])

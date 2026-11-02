@@ -22,6 +22,20 @@ A loja quer extensões úteis, honestas e leves. A revisão segue estas regras.
 - O modelo `templates/icon.svg` é um ponto de partida. O `check` desenha o ícone com o mesmo
   renderizador do app (nanosvg) e recusa um que não apareça.
 
+### Ícone de uma cor (`iconMono`)
+
+O app desenha os próprios ícones numa cor só, na cor do tema (escura no tema claro, clara no escuro,
+a de destaque na aba aberta). Nas abas, na barra do celular e nos cabeçalhos, o ícone de uma extensão
+segue o mesmo estilo: o app usa o `iconMono` e o pinta. A loja continua mostrando o `icon` colorido.
+
+- `icon-mono.svg`, `viewBox="0 0 24 24"`, só traços e formas numa cor (o preto serve: só a forma
+  conta), como os ícones [Lucide](https://lucide.dev): traço de 2, pontas e cantos arredondados, sem
+  fundo.
+- O mesmo símbolo do `icon`, sem o quadrado de fundo.
+- Sem `iconMono`, o app usa as partes claras do `icon` (o símbolo branco sobre o fundo colorido); um
+  símbolo colorido ou escuro pode sumir, por isso o `check` recomenda o `iconMono`.
+- O modelo `templates/icon-mono.svg` é um ponto de partida.
+
 ## Capturas
 
 Até 4, PNG ou JPG, até 300 KB cada, de preferência 1280×720 (16:9). Mostre a extensão funcionando no

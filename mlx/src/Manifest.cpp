@@ -192,7 +192,7 @@ const std::string& Manifest::helpIn(std::string_view lang) const { return inLang
 
 std::vector<std::string> Manifest::namedFiles() const {
     std::vector<std::string> f;
-    for (const std::string* s : {&icon, &help, &changelog})
+    for (const std::string* s : {&icon, &iconMono, &help, &changelog})
         if (!s->empty()) f.push_back(*s);
     for (const auto& [lang, file] : helps) f.push_back(file);
     f.insert(f.end(), screenshots.begin(), screenshots.end());
@@ -329,6 +329,7 @@ bool parseManifest(std::string_view text, const ManifestOptions& opt, Manifest& 
         }
     };
     member("icon", m.icon, {".svg", ".png"});
+    member("iconMono", m.iconMono, {".svg"});
     member("help", m.help, {".md"});
     member("changelog", m.changelog, {".md"});
     for (auto it = j.begin(); it != j.end(); ++it) {
@@ -435,6 +436,7 @@ std::string manifestJson(const Manifest& m) {
     for (const auto& [lang, f] : m.helps) j["help@" + lang] = f;
     j["entry"] = m.entry;
     if (!m.icon.empty()) j["icon"] = m.icon;
+    if (!m.iconMono.empty()) j["iconMono"] = m.iconMono;
     if (!m.help.empty()) j["help"] = m.help;
     json perms = json::array();
     for (Permission p : permissionList(m.permissions)) perms.push_back(permissionInfo(p)->key);

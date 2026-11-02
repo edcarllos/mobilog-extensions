@@ -22,6 +22,20 @@ The store wants useful, honest and light extensions. Reviews follow these rules.
 - `templates/icon.svg` is a starting point. `check` draws the icon with the app's renderer (nanosvg) and
   refuses one that does not show.
 
+### One-colour icon (`iconMono`)
+
+The app draws its own icons in one colour, the theme's (dark on the light theme, light on the dark one,
+the accent on the open tab). In the tabs, the phone's bar and the headers an extension's icon follows
+the same style: the app takes `iconMono` and paints it. The store keeps showing the coloured `icon`.
+
+- `icon-mono.svg`, `viewBox="0 0 24 24"`, strokes and shapes in one colour (black is fine: only the
+  shape counts), like the [Lucide](https://lucide.dev) icons: 2 px strokes, round caps and joins, no
+  background.
+- The same symbol as `icon`, without the background square.
+- Without `iconMono` the app takes the light parts of `icon` (the white symbol on the coloured
+  background); a coloured or dark symbol may vanish, so `check` recommends `iconMono`.
+- `templates/icon-mono.svg` is a starting point.
+
 ## Screenshots
 
 Up to 4, PNG or JPG, up to 300 KB each, preferably 1280×720 (16:9). Show the extension working on the

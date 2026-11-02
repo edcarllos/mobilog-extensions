@@ -14,6 +14,7 @@
   "keywords": ["exemplo"],
   "entry": "extension.wasm",
   "icon": "icon.svg",
+  "iconMono": "icon-mono.svg",
   "help": "help.md",
   "help@en": "help.en.md",
   "changelog": "CHANGELOG.md",

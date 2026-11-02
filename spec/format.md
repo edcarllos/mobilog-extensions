@@ -14,7 +14,7 @@ at most 200, and 48 MB as a whole. Member names are relative UTF-8 paths with `/
 |---|---|
 | `manifest.json` | required (see the [manifest](../docs/en/manifest.md)) |
 | the `entry` module | required: a WebAssembly module |
-| the files the manifest names | `icon`, `help`, `help@*`, `changelog`, `screenshots` |
+| the files the manifest names | `icon`, `iconMono`, `help`, `help@*`, `changelog`, `screenshots` |
 | `signature.json` | optional |
 
 Writers produce deterministic zips: `manifest.json` first, the rest sorted by name, timestamps
@@ -51,7 +51,7 @@ Key files (text): `mobilog-ext-key-v1 <base64 public key> [name]` and
                  "file": "<id>-<version>.mlx", "size", "sha512", "signerKey": "<base64 or empty>",
                  "example": false,
                  "summary", "category", "keywords", "license", "homepage", "repository",
-                 "minAppVersion", "apiVersion", "updated", "icon": "<SVG text>", "screenshots": 2,
+                 "minAppVersion", "apiVersion", "updated", "icon": "<SVG text>", "iconMono": "<SVG text>", "screenshots": 2,
                  "name@<lang>", "summary@<lang>", "description@<lang>"}]}
 ```
 

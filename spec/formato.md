@@ -19,7 +19,7 @@ ignorando maiúsculas e com até 160 bytes.
 |---|---|
 | `manifest.json` | obrigatório (veja o [manifesto](../docs/pt/manifesto.md)) |
 | o módulo de `entry` | obrigatório: um módulo WebAssembly |
-| os arquivos que o manifesto cita | `icon`, `help`, `help@*`, `changelog`, `screenshots` |
+| os arquivos que o manifesto cita | `icon`, `iconMono`, `help`, `help@*`, `changelog`, `screenshots` |
 | `signature.json` | opcional |
 
 Quem escreve gera zips determinísticos: `manifest.json` primeiro, o resto em ordem de nome, datas
@@ -64,7 +64,7 @@ Arquivos de chave (texto):
                  "file": "<id>-<versão>.mlx", "size", "sha512", "signerKey": "<base64 ou vazio>",
                  "example": false,
                  "summary", "category", "keywords", "license", "homepage", "repository",
-                 "minAppVersion", "apiVersion", "updated", "icon": "<texto SVG>", "screenshots": 2,
+                 "minAppVersion", "apiVersion", "updated", "icon": "<texto SVG>", "iconMono": "<texto SVG>", "screenshots": 2,
                  "name@<idioma>", "summary@<idioma>", "description@<idioma>"}]}
 ```
 

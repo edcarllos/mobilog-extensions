@@ -34,7 +34,8 @@ struct CatalogEntry {
     // For the store.
     std::string summary, category, license, homepage, repository, minAppVersion, updated;
     int apiVersion = 1;
-    std::string icon;  // SVG text ("" none)
+    std::string icon;      // SVG text ("" none)
+    std::string iconMono;  // the one-colour SVG text ("" none: the app takes the light parts of `icon`)
     int screenshots = 0;
     std::vector<std::string> keywords;
     std::map<std::string, std::string> names, summaries, descriptions;  // by language

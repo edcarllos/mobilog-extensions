@@ -86,6 +86,17 @@ void storeRules(const Manifest& m, const std::function<bool(const std::string&, 
     Bytes data;
     if (m.icon.empty()) f.error(tr("icon: obrigatório na loja (icon.svg)", "icon: required by the store (icon.svg)"));
     else if (read(m.icon, data)) checkIcon(m.icon, data, f);
+    // The one-colour icon (optional): drawn the same way; its findings named after it.
+    if (m.iconMono.empty()) {
+        f.warn(tr("iconMono: recomendado (o símbolo numa cor só, como os ícones do app; sem ele o app usa as partes claras do icon)",
+                  "iconMono: recommended (the symbol in one colour, like the app's icons; without it the app takes the light parts of icon)"));
+    } else if (read(m.iconMono, data)) {
+        Findings mono;
+        checkIcon(m.iconMono, data, mono);
+        auto rename = [](std::string s) { return s.rfind("icon:", 0) == 0 ? "iconMono:" + s.substr(5) : s; };
+        for (std::string& e : mono.errors) f.error(rename(std::move(e)));
+        for (std::string& w : mono.warnings) f.warn(rename(std::move(w)));
+    }
     if (m.changelog.empty()) {
         f.error(tr("changelog: obrigatório na loja (CHANGELOG.md, com uma seção \"## <versão>\")",
                    "changelog: required by the store (CHANGELOG.md, with a \"## <version>\" section)"));

@@ -52,6 +52,7 @@
 | `homepage`, `repository` | não | endereços `https://` |
 | `entry` | sim | o arquivo `.wasm` do pacote |
 | `icon` | loja | `icon.svg` (vetorial, ≤ 32 KB, só formas) |
+| `iconMono` | não (recomendado) | `icon-mono.svg`: o mesmo símbolo numa cor só, como os ícones do app; o app o pinta na cor do tema nas abas e nos cabeçalhos |
 | `help`, `help@<idioma>` | loja | o manual em Markdown (`help.md`, `help.en.md`) |
 | `changelog` | loja | `CHANGELOG.md`, com uma seção `## <versão>` para a versão atual |
 | `screenshots` | não | até 4 imagens `.png`/`.jpg` do pacote (≤ 300 KB cada; sugerido 1280×720) |
