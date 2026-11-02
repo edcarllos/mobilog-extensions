@@ -1,1 +1,1 @@
-mobilog-catalog-signature-v1 kHhHXOqGFZCifFw4kjtYrnGJSWmf2NkGSTMNKbZ+Ysg= wMByaHEQ/lH+whLAAz9ILP7nDdBmKwe4ccZm3dTH/swBPoOLPXH8yPo0cXhh9yAEufkHI047qhKkpL0Z/b68CQ==
+mobilog-catalog-signature-v1 kHhHXOqGFZCifFw4kjtYrnGJSWmf2NkGSTMNKbZ+Ysg= H7K5XMCqPiwEMUPZLVyK6T3v4QkEcK5JVuF+Uofdp4UUaAeCJi7t59YBPq0KZorDdJVijCF/iZX13akc7CuHAA==
